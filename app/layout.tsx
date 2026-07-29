@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "심장을 구해라! | 5분 심부전 복습 게임",
-  description: "심부전 핵심 개념을 5분 안에 복습하는 퀴즈 게임",
+  title: "심장을 움직여라! VER2 | 심부전 인터랙티브 랩",
+  description: "혈류, 울혈, 전후부하와 응급 간호를 직접 조작하며 배우는 심부전 시뮬레이션",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",

@@ -1,194 +1,197 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
-type Question = {
-  category: string;
-  prompt: string;
-  options: string[];
-  answer: number;
-  note: string;
-};
+type Side = "left" | "right";
+type Stage = "intro" | "flow" | "sort" | "lab" | "case" | "result";
 
-const QUESTIONS: Question[] = [
+const SYMPTOMS = [
+  { id: "dyspnea", label: "호흡곤란", side: "left" as Side, icon: "◌" },
+  { id: "pink", label: "분홍색 거품 가래", side: "left" as Side, icon: "≈" },
+  { id: "pnd", label: "야간발작성 호흡곤란", side: "left" as Side, icon: "☾" },
+  { id: "jvd", label: "경정맥 팽창", side: "right" as Side, icon: "↟" },
+  { id: "ascites", label: "복수·간종창", side: "right" as Side, icon: "◉" },
+  { id: "edema", label: "하지 함요부종", side: "right" as Side, icon: "↓" },
+];
+
+const CASE_STEPS = [
   {
-    category: "핵심 정의",
-    prompt: "심부전을 가장 정확하게 설명한 것은?",
-    options: ["심장이 너무 빨리 뛰는 상태", "심장이 몸 전체로 혈액을 충분히 짜내지 못하는 상태", "폐에만 물이 차는 상태"],
+    title: "22:10 · 응급실 도착",
+    text: "68세 환자. 잠을 자다 숨이 차서 깼고, 앉아 있어야 숨쉬기 편하다고 말합니다. 분홍색 거품 가래와 수포음이 들립니다.",
+    question: "가장 먼저 의심할 상황은?",
+    options: ["우심부전으로 인한 복수", "좌심부전으로 인한 폐부종", "단순 탈수"],
     answer: 1,
-    note: "심부전은 원인이 아니라, 심장의 펌프 기능이 제 역할을 못하는 상태예요.",
+    feedback: "좌심실 뒤쪽의 폐정맥에 혈액이 정체되어 폐포 안으로 수분이 누출된 급성 폐부종 양상입니다.",
   },
   {
-    category: "좌 vs 우",
-    prompt: "좌심부전에서 가장 먼저 연결해야 할 증상은?",
-    options: ["호흡곤란과 폐울혈", "하지 부종과 복수", "간비대와 경정맥 팽창"],
+    title: "22:11 · 상태 확인",
+    text: "SpO₂ 86%, RR 30회/분, 청색증이 보입니다. 환자는 불안해하며 누우면 더 힘들어합니다.",
+    question: "가장 적절한 즉시 간호는?",
+    options: ["평평하게 눕히기", "고좌위·산소 공급", "물을 많이 마시게 하기"],
+    answer: 1,
+    feedback: "고좌위는 정맥환류와 폐울혈 부담을 줄이고, 산소 공급은 저산소증을 완화합니다.",
+  },
+  {
+    title: "22:14 · 처방 확인",
+    text: "폐울혈과 호흡곤란을 빠르게 줄이기 위한 약물이 처방되었습니다.",
+    question: "약물과 핵심 관찰을 연결하세요.",
+    options: ["Furosemide — I/O·체중·K⁺", "Digoxin — 수분섭취 증가", "ACEi — 마른기침과 무관"],
     answer: 0,
-    note: "좌심실 뒤쪽은 폐예요. 혈액이 뒤로 밀리면 폐울혈과 호흡곤란이 나타나요.",
-  },
-  {
-    category: "좌 vs 우",
-    prompt: "우심부전의 대표적인 관찰 소견은?",
-    options: ["분홍색 거품 가래", "경정맥 팽창과 하지 부종", "발작성 야간 호흡곤란"],
-    answer: 1,
-    note: "우심부전은 전신 정맥 울혈! 경정맥 팽창, 하지 부종, 복수, 간종창을 기억하세요.",
-  },
-  {
-    category: "병태생리",
-    prompt: "고혈압처럼 심장이 혈액을 내보낼 때 받는 저항은?",
-    options: ["전부하", "후부하", "심박수"],
-    answer: 1,
-    note: "후부하는 ‘나가는 길의 저항’이에요. 고혈압과 판막 협착이 대표적입니다.",
-  },
-  {
-    category: "병태생리",
-    prompt: "RAAS가 활성화되어 알도스테론이 증가하면?",
-    options: ["나트륨과 물을 더 배출한다", "나트륨과 물을 붙잡아 전부하가 증가한다", "심박수가 즉시 감소한다"],
-    answer: 1,
-    note: "알도스테론은 나트륨과 수분을 붙잡아요. 혈액량이 늘어 전부하와 부종이 악화될 수 있어요.",
-  },
-  {
-    category: "진단",
-    prompt: "심장이 받는 스트레스를 반영해 심부전 진단에 중요한 혈액검사는?",
-    options: ["BNP / NT-proBNP", "HbA1c", "Amylase"],
-    answer: 0,
-    note: "BNP와 NT-proBNP는 심장이 늘어나고 부담을 받을 때 증가하는 중요한 지표예요.",
-  },
-  {
-    category: "약물",
-    prompt: "Furosemide(라식스)를 투여할 때 특히 관찰할 것은?",
-    options: ["고칼륨혈증만 확인", "I/O, 매일 체중, 저칼륨혈증", "취침 직전 투여"],
-    answer: 1,
-    note: "강력한 고리이뇨제예요. 아침 투여, I/O와 매일 체중, 칼륨 감소를 확인합니다.",
-  },
-  {
-    category: "약물",
-    prompt: "Digoxin 투여 전 맥박이 58회/분이라면?",
-    options: ["바로 투여한다", "두 배로 투여한다", "투여를 보류하고 보고한다"],
-    answer: 2,
-    note: "Digoxin은 심박수를 낮출 수 있어요. 성인 맥박이 60회/분 미만이면 보류하고 보고합니다.",
+    feedback: "고리이뇨제는 강력하게 체액을 배출합니다. I/O, 매일 체중, 저칼륨혈증을 관찰합니다.",
   },
 ];
 
-const LETTERS = ["A", "B", "C"];
-
 export default function Home() {
-  const [started, setStarted] = useState(false);
-  const [index, setIndex] = useState(0);
-  const [score, setScore] = useState(0);
-  const [selected, setSelected] = useState<number | null>(null);
-  const [seconds, setSeconds] = useState(300);
-  const [finished, setFinished] = useState(false);
-  const question = QUESTIONS[index];
+  const [stage, setStage] = useState<Stage>("intro");
+  const [flowSide, setFlowSide] = useState<Side | null>(null);
+  const [selectedSymptom, setSelectedSymptom] = useState<string | null>(null);
+  const [placed, setPlaced] = useState<Record<string, Side>>({});
+  const [preload, setPreload] = useState(45);
+  const [afterload, setAfterload] = useState(45);
+  const [caseStep, setCaseStep] = useState(0);
+  const [caseChoice, setCaseChoice] = useState<number | null>(null);
+  const [caseScore, setCaseScore] = useState(0);
 
-  useEffect(() => {
-    if (!started || finished || seconds <= 0) return;
-    const id = window.setInterval(() => setSeconds((s) => s - 1), 1000);
-    return () => window.clearInterval(id);
-  }, [started, finished, seconds]);
+  const sortCorrect = Object.entries(placed).filter(([id, side]) => SYMPTOMS.find((s) => s.id === id)?.side === side).length;
+  const lab = useMemo(() => {
+    const strain = Math.round((preload + afterload) / 2);
+    const output = Math.max(18, Math.round(100 - strain * 0.7));
+    return { strain, output, congestion: Math.round(preload * 0.9), resistance: Math.round(afterload * 0.9) };
+  }, [preload, afterload]);
 
-  useEffect(() => {
-    if (started && seconds === 0) setFinished(true);
-  }, [seconds, started]);
-
-  const time = useMemo(
-    () => `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`,
-    [seconds],
-  );
-
-  function choose(option: number) {
-    if (selected !== null) return;
-    setSelected(option);
-    if (option === question.answer) setScore((s) => s + 1);
+  function place(side: Side) {
+    if (!selectedSymptom) return;
+    setPlaced((p) => ({ ...p, [selectedSymptom]: side }));
+    setSelectedSymptom(null);
   }
 
-  function next() {
-    if (index === QUESTIONS.length - 1) {
-      setFinished(true);
-      return;
-    }
-    setIndex((i) => i + 1);
-    setSelected(null);
+  function treat(type: "diuretic" | "vasodilator") {
+    if (type === "diuretic") setPreload((v) => Math.max(10, v - 25));
+    else setAfterload((v) => Math.max(10, v - 25));
+  }
+
+  function answerCase(i: number) {
+    if (caseChoice !== null) return;
+    setCaseChoice(i);
+    if (i === CASE_STEPS[caseStep].answer) setCaseScore((s) => s + 1);
+  }
+
+  function nextCase() {
+    if (caseStep === CASE_STEPS.length - 1) return setStage("result");
+    setCaseStep((s) => s + 1);
+    setCaseChoice(null);
   }
 
   function restart() {
-    setStarted(true);
-    setIndex(0);
-    setScore(0);
-    setSelected(null);
-    setSeconds(300);
-    setFinished(false);
-  }
-
-  if (!started) {
-    return (
-      <main className="shell intro">
-        <div className="brand">HEART LAB <span>5</span></div>
-        <section className="hero">
-          <div className="pulse" aria-hidden="true">♥</div>
-          <p className="eyebrow">5분 심부전 복습 게임</p>
-          <h1>심장을<br /><em>구해라!</em></h1>
-          <p className="lead">8개의 핵심 문제를 풀고<br />심부전 구조대원이 되어보세요.</p>
-          <button className="start" onClick={() => setStarted(true)}>게임 시작 <b>→</b></button>
-          <div className="rules"><span>⏱ 5분</span><span>◆ 8문제</span><span>⚡ 즉시 해설</span></div>
-        </section>
-        <p className="source">오늘 수업 자료 · 심부전 핵심편</p>
-      </main>
-    );
-  }
-
-  if (finished) {
-    const message = score >= 7 ? "심부전 구조대장!" : score >= 5 ? "훌륭한 구조대원!" : "한 번 더 하면 완벽!";
-    return (
-      <main className="shell result">
-        <div className="brand">HEART LAB <span>5</span></div>
-        <section className="result-card">
-          <div className="result-heart">♥</div>
-          <p className="eyebrow">MISSION COMPLETE</p>
-          <h1>{message}</h1>
-          <div className="score-ring"><strong>{score}</strong><span>/ {QUESTIONS.length}</span></div>
-          <p>{score >= 7 ? "좌·우심부전부터 약물 간호까지 정확히 기억했어요." : "틀린 문제의 한 줄 해설을 떠올리며 다시 도전해 보세요."}</p>
-          <button className="start" onClick={restart}>다시 도전 <b>↻</b></button>
-        </section>
-      </main>
-    );
+    setStage("intro"); setFlowSide(null); setSelectedSymptom(null); setPlaced({});
+    setPreload(45); setAfterload(45); setCaseStep(0); setCaseChoice(null); setCaseScore(0);
   }
 
   return (
-    <main className="shell game">
-      <header>
-        <div className="brand">HEART LAB <span>5</span></div>
-        <div className={`timer ${seconds < 60 ? "danger" : ""}`}><small>남은 시간</small>{time}</div>
-      </header>
-      <div className="progress" aria-label={`${index + 1}번째 문제`}>
-        <i style={{ width: `${((index + 1) / QUESTIONS.length) * 100}%` }} />
-      </div>
-      <div className="question-meta">
-        <span>ROUND {String(index + 1).padStart(2, "0")} / {String(QUESTIONS.length).padStart(2, "0")}</span>
-        <b>{question.category}</b>
-      </div>
-      <section className="question-card">
-        <h1>{question.prompt}</h1>
-        <div className="answers">
-          {question.options.map((option, i) => {
-            const state = selected === null ? "" : i === question.answer ? "correct" : i === selected ? "wrong" : "muted";
-            return (
-              <button key={option} className={state} onClick={() => choose(i)}>
-                <span>{LETTERS[i]}</span>{option}
-                {state === "correct" && <b>✓</b>}
-                {state === "wrong" && <b>×</b>}
-              </button>
-            );
-          })}
+    <main className={`app stage-${stage}`}>
+      <header className="topbar">
+        <div className="logo">HEART LAB <b>V2</b></div>
+        <div className="steps" aria-label="게임 진행 단계">
+          {["flow", "sort", "lab", "case"].map((s, i) => <i key={s} className={stage === s || ["sort","lab","case","result"].indexOf(stage) > i - 1 ? "on" : ""}>{i + 1}</i>)}
         </div>
-        {selected !== null && (
-          <div className={`feedback ${selected === question.answer ? "good" : "bad"}`}>
-            <strong>{selected === question.answer ? "정답! 심장이 힘을 되찾았어요." : "아쉬워요! 정답을 확인해요."}</strong>
-            <p>{question.note}</p>
-            <button onClick={next}>{index === QUESTIONS.length - 1 ? "결과 보기" : "다음 문제"} →</button>
+        <span className="five">약 5분</span>
+      </header>
+
+      {stage === "intro" && (
+        <section className="intro">
+          <div className="ekg" aria-hidden="true"><span /><span /><span /></div>
+          <p className="kicker">심부전 병태생리 인터랙티브 랩</p>
+          <h1>읽지 말고,<br /><em>심장을 움직여보세요.</em></h1>
+          <p className="lede">혈액이 어디에 쌓이는지 직접 관찰하고<br />전·후부하를 조절해 환자를 구조하세요.</p>
+          <button className="primary" onClick={() => setStage("flow")}>실험 시작하기 <b>→</b></button>
+          <div className="mission-strip"><span>혈류 실험</span><span>증상 배치</span><span>부하 조절</span><span>응급 구조</span></div>
+        </section>
+      )}
+
+      {stage === "flow" && (
+        <section className="screen flow-screen">
+          <div className="screen-head"><div><small>MISSION 01</small><h1>펌프 한쪽을 멈춰보세요</h1></div><p>심실을 눌러 혈액이 어디에 정체되는지 관찰하세요.</p></div>
+          <div className={`circulation ${flowSide ? `fail-${flowSide}` : ""}`}>
+            <div className="organ lungs"><b>폐</b><div className="alveoli">◌ ◌ ◌</div><p>{flowSide === "left" ? "폐정맥 울혈 → 폐포 수분 누출" : "산소화"}</p></div>
+            <div className="vessel pulmonary"><i/><i/><i/><i/></div>
+            <div className="heart">
+              <button onClick={() => setFlowSide("right")} className={flowSide === "right" ? "failed" : ""}><small>우심실</small><b>RV</b><span>폐로 보냄</span></button>
+              <button onClick={() => setFlowSide("left")} className={flowSide === "left" ? "failed" : ""}><small>좌심실</small><b>LV</b><span>전신으로 보냄</span></button>
+            </div>
+            <div className="vessel systemic"><i/><i/><i/><i/></div>
+            <div className="organ body"><b>전신</b><div className="person">♙</div><p>{flowSide === "right" ? "전신정맥 울혈 → 부종·복수·JVD" : "조직 관류"}</p></div>
           </div>
-        )}
-      </section>
-      <footer><span>현재 점수 <b>{score}</b></span><span>빠르게보다 정확하게!</span></footer>
+          <div className="observation">
+            {!flowSide ? <p>심실을 하나 선택해 고장 내보세요.</p> :
+              flowSide === "left" ? <><strong>좌심실 고장: 뒤쪽인 폐에 혈액이 쌓입니다.</strong><p>호흡곤란 · 수포음 · 분홍색 거품 가래 · 야간발작성 호흡곤란</p></> :
+              <><strong>우심실 고장: 뒤쪽인 전신 정맥에 혈액이 쌓입니다.</strong><p>경정맥 팽창 · 간종창 · 복수 · 하지 함요부종</p></>}
+          </div>
+          <button className="next" disabled={!flowSide} onClick={() => setStage("sort")}>관찰 완료 →</button>
+        </section>
+      )}
+
+      {stage === "sort" && (
+        <section className="screen">
+          <div className="screen-head"><div><small>MISSION 02</small><h1>증상을 울혈 위치에 배치하세요</h1></div><p>카드를 선택한 뒤 좌·우 영역을 누르세요.</p></div>
+          <div className="symptom-tray">
+            {SYMPTOMS.map((s) => <button key={s.id} onClick={() => setSelectedSymptom(s.id)} className={`${selectedSymptom === s.id ? "selected" : ""} ${placed[s.id] ? "placed" : ""}`}><b>{s.icon}</b>{s.label}</button>)}
+          </div>
+          <div className="drop-grid">
+            {(["left","right"] as Side[]).map((side) => (
+              <button key={side} className={`drop-zone ${side}`} onClick={() => place(side)}>
+                <span>{side === "left" ? "좌심부전 · 폐울혈" : "우심부전 · 전신울혈"}</span>
+                <div>{SYMPTOMS.filter((s) => placed[s.id] === side).map((s) => <i key={s.id} className={s.side === side ? "right" : "wrong"}>{s.label}{s.side === side ? " ✓" : " ↺"}</i>)}</div>
+                <small>{selectedSymptom ? "여기에 놓기" : "카드를 먼저 선택하세요"}</small>
+              </button>
+            ))}
+          </div>
+          <div className="scoreline"><b>{sortCorrect}</b> / 6 정확히 연결</div>
+          <button className="next" disabled={Object.keys(placed).length < 6} onClick={() => setStage("lab")}>부하 실험실로 →</button>
+        </section>
+      )}
+
+      {stage === "lab" && (
+        <section className="screen lab-screen">
+          <div className="screen-head"><div><small>MISSION 03</small><h1>심장의 짐을 직접 조절하세요</h1></div><p>슬라이더와 치료 버튼이 심박출량에 미치는 영향을 관찰하세요.</p></div>
+          <div className="lab-grid">
+            <div className="controls">
+              <label><span><b>전부하</b> · 들어오는 혈액량</span><output>{preload}</output><input type="range" min="10" max="100" value={preload} onChange={(e) => setPreload(+e.target.value)} /></label>
+              <label><span><b>후부하</b> · 내보낼 때 저항</span><output>{afterload}</output><input type="range" min="10" max="100" value={afterload} onChange={(e) => setAfterload(+e.target.value)} /></label>
+              <div className="treatments"><button onClick={() => treat("diuretic")}>이뇨제 투여<small>체액↓ → 전부하↓</small></button><button onClick={() => treat("vasodilator")}>혈관확장제 투여<small>저항↓ → 후부하↓</small></button></div>
+            </div>
+            <div className="monitor">
+              <div className={`beating-heart ${lab.strain > 65 ? "strained" : ""}`}>♥</div>
+              <div className="meter"><span>심장 부담</span><i><b style={{width:`${lab.strain}%`}} /></i><output>{lab.strain}%</output></div>
+              <div className="readouts"><div><small>심박출 효율</small><b>{lab.output}%</b></div><div><small>울혈 위험</small><b>{lab.congestion}%</b></div><div><small>혈관 저항</small><b>{lab.resistance}%</b></div></div>
+              <p>{lab.strain > 65 ? "보상기전이 계속되면 심실·심근 비대 후 수축력이 떨어집니다." : "부하가 감소해 심장이 혈액을 더 효율적으로 내보냅니다."}</p>
+            </div>
+          </div>
+          <button className="next" onClick={() => setStage("case")}>응급실 미션 →</button>
+        </section>
+      )}
+
+      {stage === "case" && (
+        <section className="screen case-screen">
+          <div className="case-top"><span>ER SIMULATION</span><div className="vitals"><b>HR 112</b><b>RR 30</b><b className="low">SpO₂ 86%</b></div></div>
+          <div className="patient"><div className="patient-face">◉</div><div><small>{CASE_STEPS[caseStep].title}</small><p>{CASE_STEPS[caseStep].text}</p></div></div>
+          <div className="decision">
+            <small>DECISION {caseStep + 1} / {CASE_STEPS.length}</small>
+            <h1>{CASE_STEPS[caseStep].question}</h1>
+            {CASE_STEPS[caseStep].options.map((o, i) => <button key={o} disabled={caseChoice !== null} onClick={() => answerCase(i)} className={caseChoice === null ? "" : i === CASE_STEPS[caseStep].answer ? "correct" : i === caseChoice ? "wrong" : "dim"}><span>{i + 1}</span>{o}</button>)}
+            {caseChoice !== null && <div className="case-feedback"><b>{caseChoice === CASE_STEPS[caseStep].answer ? "정확한 판단입니다." : "다시 연결해 볼 포인트예요."}</b><p>{CASE_STEPS[caseStep].feedback}</p><button onClick={nextCase}>{caseStep === CASE_STEPS.length - 1 ? "구조 결과 보기" : "다음 처치"} →</button></div>}
+          </div>
+        </section>
+      )}
+
+      {stage === "result" && (
+        <section className="result">
+          <div className="result-pulse">♥</div><p className="kicker">PATIENT STABILIZED</p>
+          <h1>환자를 안정시켰습니다</h1>
+          <div className="final-stats"><div><b>{sortCorrect}/6</b><span>증상 연결</span></div><div><b>{caseScore}/3</b><span>임상 판단</span></div><div><b>{lab.output}%</b><span>최종 박출 효율</span></div></div>
+          <p className="takeaway"><strong>오늘의 핵심</strong>좌심실 뒤는 폐, 우심실 뒤는 전신 정맥.<br />이뇨제는 전부하를, 혈관확장제는 후부하를 낮춥니다.</p>
+          <button className="primary" onClick={restart}>처음부터 다시 실험 ↻</button>
+        </section>
+      )}
     </main>
   );
 }
