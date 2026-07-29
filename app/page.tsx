@@ -8,10 +8,10 @@ type Stage = "intro" | "flow" | "sort" | "lab" | "case" | "result";
 const SYMPTOMS = [
   { id: "dyspnea", label: "호흡곤란", side: "left" as Side, icon: "◌" },
   { id: "pink", label: "분홍색 거품 가래", side: "left" as Side, icon: "≈" },
-  { id: "pnd", label: "야간발작성 호흡곤란", side: "left" as Side, icon: "☾" },
+  { id: "pnd", label: "돌발야간호흡곤란", side: "left" as Side, icon: "☾" },
   { id: "jvd", label: "경정맥 팽창", side: "right" as Side, icon: "↟" },
   { id: "ascites", label: "복수·간종창", side: "right" as Side, icon: "◉" },
-  { id: "edema", label: "하지 함요부종", side: "right" as Side, icon: "↓" },
+  { id: "edema", label: "하지부종", side: "right" as Side, icon: "↓" },
 ];
 
 const CASE_STEPS = [
@@ -111,20 +111,22 @@ export default function Home() {
       {stage === "flow" && (
         <section className="screen flow-screen">
           <div className="screen-head"><div><small>MISSION 01</small><h1>펌프 한쪽을 멈춰보세요</h1></div><p>심실을 눌러 혈액이 어디에 정체되는지 관찰하세요.</p></div>
-          <div className={`circulation ${flowSide ? `fail-${flowSide}` : ""}`}>
-            <div className="organ lungs"><b>폐</b><div className="alveoli">◌ ◌ ◌</div><p>{flowSide === "left" ? "폐정맥 울혈 → 폐포 수분 누출" : "산소화"}</p></div>
-            <div className="vessel pulmonary"><i/><i/><i/><i/></div>
-            <div className="heart">
+          <div className={`circulation anatomy ${flowSide ? `fail-${flowSide}` : ""}`}>
+            <div className="organ lungs"><b>폐</b><div className="lung-shape" aria-hidden="true"><i/><i/></div><p>{flowSide === "left" ? "폐정맥 울혈 → 폐포 수분 누출" : "혈액에 산소를 공급"}</p></div>
+            <div className="flow-path pulmonary-path"><span>우심실에서 폐로 ↑</span><div className="vessel pulmonary"><i/><i/><i/><i/></div></div>
+            <div className="heart" aria-label="심장">
               <button onClick={() => setFlowSide("right")} className={flowSide === "right" ? "failed" : ""}><small>우심실</small><b>RV</b><span>폐로 보냄</span></button>
               <button onClick={() => setFlowSide("left")} className={flowSide === "left" ? "failed" : ""}><small>좌심실</small><b>LV</b><span>전신으로 보냄</span></button>
             </div>
-            <div className="vessel systemic"><i/><i/><i/><i/></div>
-            <div className="organ body"><b>전신</b><div className="person">♙</div><p>{flowSide === "right" ? "전신정맥 울혈 → 부종·복수·JVD" : "조직 관류"}</p></div>
+            <div className="flow-path systemic-path"><div className="vessel systemic"><i/><i/><i/><i/></div><span>좌심실에서 전신으로 ↓</span></div>
+            <div className="organ body"><b>전신 조직</b><div className="person" aria-hidden="true">♙</div><p>{flowSide === "right" ? "전신정맥 울혈 → 부종·복수·JVD" : "산소를 조직에 전달"}</p></div>
+            <div className="return-label">전신정맥 → 우심실로 돌아옴</div>
+            <div className="loop-note">순환은 한 방향으로 이어집니다</div>
           </div>
           <div className="observation">
             {!flowSide ? <p>심실을 하나 선택해 고장 내보세요.</p> :
-              flowSide === "left" ? <><strong>좌심실 고장: 뒤쪽인 폐에 혈액이 쌓입니다.</strong><p>호흡곤란 · 수포음 · 분홍색 거품 가래 · 야간발작성 호흡곤란</p></> :
-              <><strong>우심실 고장: 뒤쪽인 전신 정맥에 혈액이 쌓입니다.</strong><p>경정맥 팽창 · 간종창 · 복수 · 하지 함요부종</p></>}
+              flowSide === "left" ? <><strong>좌심실 고장: 좌심실로 들어오기 전 단계인 폐에 혈액이 쌓입니다.</strong><p>호흡곤란 · 수포음 · 분홍색 거품 가래 · 돌발야간호흡곤란</p></> :
+              <><strong>우심실 고장: 우심실로 돌아오기 전 단계인 전신 정맥에 혈액이 쌓입니다.</strong><p>경정맥 팽창 · 간종창 · 복수 · 하지부종</p></>}
           </div>
           <button className="next" disabled={!flowSide} onClick={() => setStage("sort")}>관찰 완료 →</button>
         </section>
