@@ -149,13 +149,14 @@ export default function Home() {
             <div className={`sim-lungs ${flowSide === "left" ? "congested" : ""}`}>
               <b>폐</b><div className="real-lungs"><i/><i/><span>기관</span></div>
               <small>{flowSide === "left" ? "폐울혈 · 폐포 수분 누출" : "산소 교환"}</small>
+              <div className="organ-liquid lung-liquid"><i/><i/></div>
               {flowSide === "left" && <div className="fluid-drops" aria-label="폐포에 수분이 차오름">● ● ●</div>}
             </div>
 
-            <div className="vessel-track pulmonary-artery"><span>폐동맥</span>{[0,1,2,3,4].map(n=><i key={n}/>)}</div>
-            <div className="vessel-track pulmonary-vein"><span>폐정맥</span>{[0,1,2,3,4].map(n=><i key={n}/>)}</div>
-            <div className="vessel-track vena-cava"><span>대정맥</span>{[0,1,2,3,4,5].map(n=><i key={n}/>)}</div>
-            <div className="vessel-track aorta"><span>대동맥</span>{[0,1,2,3,4,5].map(n=><i key={n}/>)}</div>
+            <div className="vessel-track pulmonary-artery"><span className="vessel-label">폐동맥</span>{[0,1,2,3,4].map(n=><i key={n}/>)}</div>
+            <div className="vessel-track pulmonary-vein"><span className="vessel-label">폐정맥</span><b className="backflow-wave"/>{[0,1,2,3,4].map(n=><i key={n}/>)}</div>
+            <div className="vessel-track vena-cava"><span className="vessel-label">대정맥</span><b className="backflow-wave"/>{[0,1,2,3,4,5].map(n=><i key={n}/>)}</div>
+            <div className="vessel-track aorta"><span className="vessel-label">대동맥</span>{[0,1,2,3,4,5].map(n=><i key={n}/>)}</div>
 
             <div className={`sim-heart ${pressing ? "being-pressed" : ""}`} aria-label="심장 모형">
               <div className="atria"><span>우심방</span><span>좌심방</span></div>
@@ -164,19 +165,20 @@ export default function Home() {
                 onPointerDown={() => startPress("right")} onPointerUp={stopPress}
                 onPointerLeave={stopPress} onPointerCancel={stopPress}
                 aria-label="우심실을 길게 눌러 고장 내기"
-              ><small>우심실</small><b>RV</b><em>{pressing === "right" ? `${pressProgress}%` : "길게 누르기"}</em></button>
+              ><span className="chamber-liquid"/><small>우심실</small><b>RV</b><em>{pressing === "right" ? `${pressProgress}%` : "길게 누르기"}</em></button>
               <button
                 className={`ventricle lv ${flowSide === "left" ? "failed" : ""}`}
                 onPointerDown={() => startPress("left")} onPointerUp={stopPress}
                 onPointerLeave={stopPress} onPointerCancel={stopPress}
                 aria-label="좌심실을 길게 눌러 고장 내기"
-              ><small>좌심실</small><b>LV</b><em>{pressing === "left" ? `${pressProgress}%` : "길게 누르기"}</em></button>
+              ><span className="chamber-liquid"/><small>좌심실</small><b>LV</b><em>{pressing === "left" ? `${pressProgress}%` : "길게 누르기"}</em></button>
               {pressing && <div className="press-ring" style={{"--press":`${pressProgress}%`} as CSSProperties}/>}
             </div>
 
             <div className={`sim-body ${flowSide === "right" ? "congested" : ""}`}>
               <b>전신 조직</b><div className="body-shape"><i/><i/><i/></div>
               <small>{flowSide === "right" ? "전신정맥 울혈 · 하지부종" : "산소와 영양 공급"}</small>
+              <div className="organ-liquid body-liquid"/>
             </div>
             <div className="flow-legend"><i/> 정맥혈 <i/> 산소화 혈액</div>
           </div>
