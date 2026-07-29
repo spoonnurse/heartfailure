@@ -105,6 +105,7 @@ export default function Home() {
         <section className="intro">
           <div className="ekg" aria-hidden="true"><span /><span /><span /></div>
           <p className="kicker">심부전 병태생리 인터랙티브 랩</p>
+          <p style={{ margin: "8px 0 -1px", color: "var(--muted)", fontSize: 14, fontWeight: 850 }}>삼육보건대학교 성인간호학 강사 박소현</p>
           <h1>읽지 말고,<br /><em>심장을 움직여보세요.</em></h1>
           <p className="lede">혈액이 어디에 쌓이는지 직접 관찰하고<br />전·후부하를 조절해 환자를 구조하세요.</p>
           <button className="primary" onClick={() => setStage("flow")}>실험 시작하기 <b>→</b></button>
