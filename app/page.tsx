@@ -145,45 +145,53 @@ export default function Home() {
       {stage === "flow" && (
         <section className="screen flow-screen">
           <div className="screen-head"><div><small>MISSION 01</small><h1>심실을 꽉 눌러보세요</h1></div><p>심실을 약 1초간 누르면 펌프가 멈춥니다. 혈구가 어디에 쌓이는지 관찰하세요.</p></div>
-          <div className={`circulation circulation-sim ${flowSide ? `fail-${flowSide}` : ""}`}>
-            <div className={`sim-lungs ${flowSide === "left" ? "congested" : ""}`}>
-              <b>폐</b><div className="real-lungs"><i/><i/><span>기관</span></div>
-              <small>{flowSide === "left" ? "폐울혈 · 폐포 수분 누출" : "산소 교환"}</small>
-              <div className="organ-liquid lung-liquid"><i/><i/></div>
-              {flowSide === "left" && <div className="fluid-drops" aria-label="폐포에 수분이 차오름">● ● ●</div>}
-            </div>
+          <div className={`circulation venous-sim ${flowSide ? `fail-${flowSide}` : ""}`}>
+            <div className="focus-note">지금은 울혈이 생기는 <b>정맥 경로</b>만 관찰합니다</div>
 
-            <div className="vessel-track pulmonary-artery"><span className="vessel-label">폐동맥</span>{[0,1,2,3,4].map(n=><i key={n}/>)}</div>
-            <div className="vessel-track pulmonary-vein"><span className="vessel-label">폐정맥</span><b className="backflow-wave"/>{[0,1,2,3,4].map(n=><i key={n}/>)}</div>
-            <div className="vessel-track vena-cava"><span className="vessel-label">대정맥</span><b className="backflow-wave"/>{[0,1,2,3,4,5].map(n=><i key={n}/>)}</div>
-            <div className="vessel-track aorta"><span className="vessel-label">대동맥</span>{[0,1,2,3,4,5].map(n=><i key={n}/>)}</div>
-
-            <div className={`sim-heart ${pressing ? "being-pressed" : ""}`} aria-label="심장 모형">
-              <div className="atria"><span>우심방</span><span>좌심방</span></div>
+            <div className="venous-lane systemic-lane">
+              <div className="lane-organ body-organ">
+                <b>전신</b><div className="body-icon"><i/><i/><i/></div>
+                <small>{flowSide === "right" ? "혈액 정체 · 하지부종" : "정맥혈이 심장으로 돌아옴"}</small>
+                <div className="rising-pool"/>
+              </div>
+              <div className="vertical-vein">
+                <span>대정맥</span><div className="vein-blood"/>
+                {[0,1,2,3,4].map(n=><i key={n}/>)}
+              </div>
               <button
-                className={`ventricle rv ${flowSide === "right" ? "failed" : ""}`}
+                className={`lane-chamber rv ${flowSide === "right" ? "failed" : ""}`}
                 onPointerDown={() => startPress("right")} onPointerUp={stopPress}
                 onPointerLeave={stopPress} onPointerCancel={stopPress}
                 aria-label="우심실을 길게 눌러 고장 내기"
-              ><span className="chamber-liquid"/><small>우심실</small><b>RV</b><em>{pressing === "right" ? `${pressProgress}%` : "길게 누르기"}</em></button>
+              ><span className="lane-liquid"/><small>우심실</small><b>RV</b><em>{pressing === "right" ? `${pressProgress}%` : "길게 누르기"}</em></button>
+              {flowSide === "right" && <div className="backflow-caption">울혈이 위로 계속 차오릅니다 ↑</div>}
+            </div>
+
+            <div className="flow-divider"><span>정맥 울혈 비교</span></div>
+
+            <div className="venous-lane pulmonary-lane">
+              <div className="lane-organ lung-organ">
+                <b>폐</b><div className="lung-icon"><i/><i/><span/></div>
+                <small>{flowSide === "left" ? "폐울혈 · 폐포 수분 누출" : "산소화된 혈액이 심장으로 돌아옴"}</small>
+                <div className="rising-pool"/>
+              </div>
+              <div className="vertical-vein">
+                <span>폐정맥</span><div className="vein-blood"/>
+                {[0,1,2,3,4].map(n=><i key={n}/>)}
+              </div>
               <button
-                className={`ventricle lv ${flowSide === "left" ? "failed" : ""}`}
+                className={`lane-chamber lv ${flowSide === "left" ? "failed" : ""}`}
                 onPointerDown={() => startPress("left")} onPointerUp={stopPress}
                 onPointerLeave={stopPress} onPointerCancel={stopPress}
                 aria-label="좌심실을 길게 눌러 고장 내기"
-              ><span className="chamber-liquid"/><small>좌심실</small><b>LV</b><em>{pressing === "left" ? `${pressProgress}%` : "길게 누르기"}</em></button>
-              {pressing && <div className="press-ring" style={{"--press":`${pressProgress}%`} as CSSProperties}/>}
+              ><span className="lane-liquid"/><small>좌심실</small><b>LV</b><em>{pressing === "left" ? `${pressProgress}%` : "길게 누르기"}</em></button>
+              {flowSide === "left" && <div className="backflow-caption">울혈이 위로 계속 차오릅니다 ↑</div>}
             </div>
 
-            <div className={`sim-body ${flowSide === "right" ? "congested" : ""}`}>
-              <b>전신 조직</b><div className="body-shape"><i/><i/><i/></div>
-              <small>{flowSide === "right" ? "전신정맥 울혈 · 하지부종" : "산소와 영양 공급"}</small>
-              <div className="organ-liquid body-liquid"/>
-            </div>
-            <div className="flow-legend"><i/> 정맥혈 <i/> 산소화 혈액</div>
+            {pressing && <div className={`press-ring lane-ring ${pressing}`} style={{"--press":`${pressProgress}%`} as CSSProperties}/>}
           </div>
           <div className="observation">
-            {!flowSide ? <p>파란 혈액은 전신에서 우심장과 폐로, 붉은 혈액은 폐에서 좌심장과 전신으로 흐릅니다.</p> :
+            {!flowSide ? <p>평소에는 혈액이 위에서 아래로 돌아옵니다. 심실이 멈추면 혈액이 반대로 차오르며 정맥 울혈이 생깁니다.</p> :
               flowSide === "left" ? <><strong>좌심실 고장: 좌심실로 들어오기 전 단계인 폐에 혈액이 쌓입니다.</strong><p>호흡곤란 · 수포음 · 분홍색 거품 가래 · 돌발야간호흡곤란</p></> :
               <><strong>우심실 고장: 우심실로 돌아오기 전 단계인 전신 정맥에 혈액이 쌓입니다.</strong><p>경정맥 팽창 · 간종창 · 복수 · 하지부종</p></>}
             {flowSide && <button className="restore" onClick={restoreFlow}>↻ 다시 뛰게 하기</button>}
