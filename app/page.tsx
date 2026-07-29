@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, type CSSProperties } from "react";
+import { useMemo, useState } from "react";
 
 type Side = "left" | "right";
 type Stage = "intro" | "flow" | "sort" | "lab" | "case" | "result";
@@ -43,10 +43,7 @@ const CASE_STEPS = [
 
 export default function Home() {
   const [stage, setStage] = useState<Stage>("intro");
-  const [flowSide, setFlowSide] = useState<Side | null>(null);
-  const [pressing, setPressing] = useState<Side | null>(null);
-  const [pressProgress, setPressProgress] = useState(0);
-  const holdTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [failedSides, setFailedSides] = useState<Record<Side, boolean>>({ left: false, right: false });
   const [selectedSymptom, setSelectedSymptom] = useState<string | null>(null);
   const [placed, setPlaced] = useState<Record<string, Side>>({});
   const [preload, setPreload] = useState(45);
@@ -73,35 +70,8 @@ export default function Home() {
     else setAfterload((v) => Math.max(10, v - 25));
   }
 
-  function stopPress() {
-    if (holdTimer.current) clearInterval(holdTimer.current);
-    holdTimer.current = null;
-    if (!flowSide) setPressProgress(0);
-    setPressing(null);
-  }
-
-  function startPress(side: Side) {
-    if (flowSide) return;
-    stopPress();
-    setPressing(side);
-    setPressProgress(0);
-    let progress = 0;
-    holdTimer.current = setInterval(() => {
-      progress += 8;
-      setPressProgress(Math.min(progress, 100));
-      if (progress >= 100) {
-        if (holdTimer.current) clearInterval(holdTimer.current);
-        holdTimer.current = null;
-        setFlowSide(side);
-        setPressing(null);
-      }
-    }, 65);
-  }
-
-  function restoreFlow() {
-    stopPress();
-    setFlowSide(null);
-    setPressProgress(0);
+  function failVentricle(side: Side) {
+    setFailedSides((current) => ({ ...current, [side]: true }));
   }
 
   function answerCase(i: number) {
@@ -117,7 +87,7 @@ export default function Home() {
   }
 
   function restart() {
-    setStage("intro"); setFlowSide(null); setSelectedSymptom(null); setPlaced({});
+    setStage("intro"); setFailedSides({ left: false, right: false }); setSelectedSymptom(null); setPlaced({});
     setPreload(45); setAfterload(45); setCaseStep(0); setCaseChoice(null); setCaseScore(0);
   }
 
@@ -144,14 +114,14 @@ export default function Home() {
 
       {stage === "flow" && (
         <section className="screen flow-screen">
-          <div className="screen-head"><div><small>MISSION 01</small><h1>심실을 꽉 눌러보세요</h1></div><p>심실을 약 1초간 누르면 펌프가 멈춥니다. 혈구가 어디에 쌓이는지 관찰하세요.</p></div>
-          <div className={`circulation venous-sim ${flowSide ? `fail-${flowSide}` : ""}`}>
+          <div className="screen-head"><div><small>MISSION 01</small><h1>두 심실을 차례로 눌러보세요</h1></div><p>버튼을 누르면 즉시 혈액이 차오릅니다. 우심실과 좌심실을 한 화면에서 비교하세요.</p></div>
+          <div className={`circulation venous-sim ${failedSides.right ? "fail-right" : ""} ${failedSides.left ? "fail-left" : ""}`}>
             <div className="focus-note">지금은 울혈이 생기는 <b>정맥 경로</b>만 관찰합니다</div>
 
             <div className="venous-lane systemic-lane">
               <div className="lane-organ body-organ">
                 <b>전신</b><div className="body-icon"><i/><i/><i/></div>
-                <small>{flowSide === "right" ? "혈액 정체 · 하지부종" : "정맥혈이 심장으로 돌아옴"}</small>
+                <small>{failedSides.right ? "혈액 정체 · 하지부종" : "정맥혈이 심장으로 돌아옴"}</small>
                 <div className="rising-pool"/>
               </div>
               <div className="vertical-vein">
@@ -159,12 +129,11 @@ export default function Home() {
                 {[0,1,2,3,4].map(n=><i key={n}/>)}
               </div>
               <button
-                className={`lane-chamber rv ${flowSide === "right" ? "failed" : ""}`}
-                onPointerDown={() => startPress("right")} onPointerUp={stopPress}
-                onPointerLeave={stopPress} onPointerCancel={stopPress}
-                aria-label="우심실을 길게 눌러 고장 내기"
-              ><span className="lane-liquid"/><small>우심실</small><b>RV</b><em>{pressing === "right" ? `${pressProgress}%` : "길게 누르기"}</em></button>
-              {flowSide === "right" && <div className="backflow-caption">울혈이 위로 계속 차오릅니다 ↑</div>}
+                className={`lane-chamber rv ${failedSides.right ? "failed" : ""}`}
+                onClick={() => failVentricle("right")}
+                aria-label="우심실을 눌러 울혈 관찰하기"
+              ><span className="lane-liquid"/><small>우심실</small><b>RV</b><em>{failedSides.right ? "관찰 완료" : "눌러보기"}</em></button>
+              {failedSides.right && <div className="backflow-caption">울혈이 위로 계속 차오릅니다 ↑</div>}
             </div>
 
             <div className="flow-divider"><span>정맥 울혈 비교</span></div>
@@ -172,7 +141,7 @@ export default function Home() {
             <div className="venous-lane pulmonary-lane">
               <div className="lane-organ lung-organ">
                 <b>폐</b><div className="lung-icon"><i/><i/><span/></div>
-                <small>{flowSide === "left" ? "폐울혈 · 폐포 수분 누출" : "산소화된 혈액이 심장으로 돌아옴"}</small>
+                <small>{failedSides.left ? "폐울혈 · 폐포 수분 누출" : "산소화된 혈액이 심장으로 돌아옴"}</small>
                 <div className="rising-pool"/>
               </div>
               <div className="vertical-vein">
@@ -180,23 +149,19 @@ export default function Home() {
                 {[0,1,2,3,4].map(n=><i key={n}/>)}
               </div>
               <button
-                className={`lane-chamber lv ${flowSide === "left" ? "failed" : ""}`}
-                onPointerDown={() => startPress("left")} onPointerUp={stopPress}
-                onPointerLeave={stopPress} onPointerCancel={stopPress}
-                aria-label="좌심실을 길게 눌러 고장 내기"
-              ><span className="lane-liquid"/><small>좌심실</small><b>LV</b><em>{pressing === "left" ? `${pressProgress}%` : "길게 누르기"}</em></button>
-              {flowSide === "left" && <div className="backflow-caption">울혈이 위로 계속 차오릅니다 ↑</div>}
+                className={`lane-chamber lv ${failedSides.left ? "failed" : ""}`}
+                onClick={() => failVentricle("left")}
+                aria-label="좌심실을 눌러 울혈 관찰하기"
+              ><span className="lane-liquid"/><small>좌심실</small><b>LV</b><em>{failedSides.left ? "관찰 완료" : "눌러보기"}</em></button>
+              {failedSides.left && <div className="backflow-caption">울혈이 위로 계속 차오릅니다 ↑</div>}
             </div>
-
-            {pressing && <div className={`press-ring lane-ring ${pressing}`} style={{"--press":`${pressProgress}%`} as CSSProperties}/>}
           </div>
           <div className="observation">
-            {!flowSide ? <p>평소에는 혈액이 위에서 아래로 돌아옵니다. 심실이 멈추면 혈액이 반대로 차오르며 정맥 울혈이 생깁니다.</p> :
-              flowSide === "left" ? <><strong>좌심실 고장: 좌심실로 들어오기 전 단계인 폐에 혈액이 쌓입니다.</strong><p>호흡곤란 · 수포음 · 분홍색 거품 가래 · 돌발야간호흡곤란</p></> :
-              <><strong>우심실 고장: 우심실로 돌아오기 전 단계인 전신 정맥에 혈액이 쌓입니다.</strong><p>경정맥 팽창 · 간종창 · 복수 · 하지부종</p></>}
-            {flowSide && <button className="restore" onClick={restoreFlow}>↻ 다시 뛰게 하기</button>}
+            {!failedSides.left && !failedSides.right && <p>평소에는 혈액이 위에서 아래로 돌아옵니다. 두 심실을 차례로 눌러 비교해보세요.</p>}
+            {failedSides.right && <div className="finding"><strong>우심실 고장 → 전신정맥 울혈</strong><p>경정맥 팽창 · 간종창 · 복수 · 하지부종</p></div>}
+            {failedSides.left && <div className="finding"><strong>좌심실 고장 → 폐정맥 울혈</strong><p>호흡곤란 · 수포음 · 분홍색 거품 가래 · 돌발야간호흡곤란</p></div>}
           </div>
-          <button className="next" disabled={!flowSide} onClick={() => setStage("sort")}>관찰 완료 →</button>
+          <button className="next" disabled={!failedSides.left || !failedSides.right} onClick={() => setStage("sort")}>두 경로 관찰 완료 →</button>
         </section>
       )}
 
